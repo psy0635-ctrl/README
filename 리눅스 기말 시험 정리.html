@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>리눅스 서버 구축 시험 총정리</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #141414;
+    --surface2: #1a1a1a;
+    --border: #2a2a2a;
+    --accent-ssh: #00d4aa;
+    --accent-ftp: #4d9eff;
+    --accent-apache: #ff6b35;
+    --accent-db: #c084fc;
+    --text: #e8e8e8;
+    --text-muted: #666;
+    --text-dim: #999;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #eab308;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 40px 48px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(0,212,170,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .header-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--accent-ssh);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 8px;
+  }
+  .header-sub {
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+  .toc {
+    display: flex;
+    gap: 8px;
+    padding: 16px 48px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .toc-item {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+  .toc-item:hover { opacity: 0.7; }
+  .toc-ssh { color: var(--accent-ssh); border-color: var(--accent-ssh); }
+  .toc-ftp { color: var(--accent-ftp); border-color: var(--accent-ftp); }
+  .toc-apache { color: var(--accent-apache); border-color: var(--accent-apache); }
+  .toc-db { color: var(--accent-db); border-color: var(--accent-db); }
+  .toc-quiz { color: var(--yellow); border-color: var(--yellow); }
+  .main { padding: 0 48px 80px; }
+  .section {
+    margin-top: 48px;
+    scroll-margin-top: 20px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+  .section-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-weight: 700;
+  }
+  .badge-ssh { background: rgba(0,212,170,0.12); color: var(--accent-ssh); }
+  .badge-ftp { background: rgba(77,158,255,0.12); color: var(--accent-ftp); }
+  .badge-apache { background: rgba(255,107,53,0.12); color: var(--accent-apache); }
+  .badge-db { background: rgba(192,132,252,0.12); color: var(--accent-db); }
+  .section-title { font-size: 18px; font-weight: 700; }
+  .section-desc { font-size: 13px; color: var(--text-dim); margin-left: auto; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th {
+    text-align: left;
+    padding: 8px 12px;
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #1f1f1f;
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  code, .mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+  .cmd-block {
+    background: #0a0a0a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 2;
+    position: relative;
+    overflow-x: auto;
+  }
+  .cmd-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid #181818;
+  }
+  .cmd-step:last-child { border-bottom: none; }
+  .step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    min-width: 20px;
+    padding-top: 2px;
+  }
+  .step-content { flex: 1; }
+  .step-cmd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent-ssh);
+    margin-bottom: 4px;
+  }
+  .step-cmd.blue { color: var(--accent-ftp); }
+  .step-cmd.orange { color: var(--accent-apache); }
+  .step-cmd.purple { color: var(--accent-db); }
+  .step-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .config-block {
+    background: #0a0a0a;
+    border-left: 3px solid;
+    border-radius: 0 6px 6px 0;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 2;
+  }
+  .config-ssh { border-left-color: var(--accent-ssh); }
+  .config-ftp { border-left-color: var(--accent-ftp); }
+  .config-apache { border-left-color: var(--accent-apache); }
+  .config-db { border-left-color: var(--accent-db); }
+  .config-key { color: var(--text-dim); }
+  .config-val { color: var(--yellow); }
+  .config-comment { color: #444; }
+
+  .warn-box {
+    background: rgba(239,68,68,0.06);
+    border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: #fca5a5;
+    margin-bottom: 12px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .warn-icon { font-size: 14px; flex-shrink: 0; }
+  .tip-box {
+    background: rgba(34,197,94,0.06);
+    border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 6px;
+    padding: 12px 16px;
+    font-size: 12px;
+    color: #86efac;
+    margin-bottom: 12px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  .quiz-section { margin-top: 48px; }
+  .quiz-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .quiz-q {
+    padding: 16px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .quiz-q:hover { background: var(--surface2); }
+  .quiz-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--yellow);
+    margin-right: 12px;
+    flex-shrink: 0;
+  }
+  .quiz-arrow {
+    font-size: 12px;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+    flex-shrink: 0;
+  }
+  .quiz-arrow.open { transform: rotate(180deg); }
+  .quiz-a {
+    display: none;
+    padding: 14px 20px;
+    background: #0f0f0f;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.8;
+  }
+  .quiz-a.show { display: block; }
+  .quiz-a code {
+    background: #1a1a1a;
+    padding: 1px 6px;
+    border-radius: 3px;
+    color: var(--accent-ssh);
+  }
+  .ans-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--green);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+
+  .flow-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 16px 0;
+    flex-wrap: wrap;
+  }
+  .flow-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    text-align: center;
+  }
+  .flow-arrow {
+    color: var(--text-muted);
+    padding: 0 8px;
+    font-size: 14px;
+  }
+
+  .port-badge {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(234,179,8,0.12);
+    color: var(--yellow);
+    border: 1px solid rgba(234,179,8,0.2);
+  }
+
+  @media (max-width: 700px) {
+    .header, .toc, .main { padding-left: 20px; padding-right: 20px; }
+    .grid2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-tag">Linux Server · Exam Study Guide</div>
+  <h1>리눅스 서버 구축 시험 총정리</h1>
+  <div class="header-sub">SSH · FTP · Apache · MariaDB — 설치 → 설정 → 재시작 → 접속 확인</div>
+</div>
+
+<div class="toc">
+  <a href="#ssh" class="toc-item toc-ssh">① SSH 서버</a>
+  <a href="#ftp" class="toc-item toc-ftp">② FTP 서버</a>
+  <a href="#apache" class="toc-item toc-apache">③ Apache 서버</a>
+  <a href="#db" class="toc-item toc-db">④ MariaDB</a>
+  <a href="#quiz" class="toc-item toc-quiz">⑤ 예상 문제</a>
+</div>
+
+<div class="main">
+
+  <!-- 공통 패턴 -->
+  <div class="section">
+    <div class="card">
+      <div class="card-title">모든 서버 공통 패턴 — 이것만 기억해</div>
+      <div class="flow-wrap">
+        <div class="flow-item">설치<br><span style="color:var(--text-muted)">apt install</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">설정파일 수정<br><span style="color:var(--text-muted)">vi [경로]</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">재시작<br><span style="color:var(--text-muted)">systemctl restart</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">상태확인<br><span style="color:var(--text-muted)">systemctl status</span></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-item">Windows에서<br>접속 테스트</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SSH -->
+  <div class="section" id="ssh">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <span class="section-badge badge-ssh">SSH</span>
+      <span class="section-title">SSH 서버 — 원격 접속</span>
+      <span class="section-desc">포트 <span class="port-badge">22</span> · PuTTY로 접속</span>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">명령어 순서</div>
+        <div class="cmd-step">
+          <span class="step-num">1</span>
+          <div class="step-content">
+            <div class="step-cmd">sudo apt install openssh-server</div>
+            <div class="step-desc">SSH 서버 설치</div>
+          </div>
+        </div>
+        <div class="cmd-step">
+          <span class="step-num">2</span>
+          <div class="step-content">
+            <div class="step-cmd">sudo vi /etc/ssh/sshd_config</div>
+            <div class="step-desc">설정 파일 편집</div>
+          </div>
+        </div>
+        <div class="cmd-step">
+          <span class="step-num">3</span>
+          <div class="step-content">
+            <div class="step-cmd">sudo systemctl restart ssh</div>
+            <div class="step-desc">설정 적용 (재시작)</div>
+          </div>
+        </div>
+        <div class="cmd-step">
+          <span class="step-num">4</span>
+          <div class="step-content">
+            <div class="step-cmd">sudo systemctl status ssh</div>
+            <div class="step-desc">실행 중인지 확인</div>
+          </div>
+        </div>
+        <div class="cmd-step">
+          <span class="step-num">5</span>
+          <div class="step-content">
+            <div class="step-cmd">ip addr</div>
+            <div class="step-desc">내 IP 확인</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">설정 파일 — /etc/ssh/sshd_config</div>
+        <div class="config-block config-ssh">
+          <div><span class="config-key">Port </span><span class="config-val">22</span></div>
+          <div><span class="config-key">ListenAddress </span><span class="config-val">0.0.0.0</span></div>
+        </div>
+        <table>
+          <tr><th>설정값</th><th>의미</th></tr>
+          <tr><td class="mono">Port 22</td><td>22번 문으로 접속</td></tr>
+          <tr><td class="mono">0.0.0.0</td><td>모든 IP에서 접속 허용</td></tr>
+        </table>
+        <div style="margin-top:14px; font-size:12px; color:var(--text-muted)">
+          Windows 접속 → <strong style="color:var(--text)">PuTTY</strong> 실행 → IP 입력
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FTP -->
+  <div class="section" id="ftp">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <span class="section-badge badge-ftp">FTP</span>
+      <span class="section-title">FTP 서버 — 파일 전송</span>
+      <span class="section-desc">포트 <span class="port-badge">21</span> · FileZilla로 접속</span>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">명령어 순서</div>
+        <div class="cmd-step">
+          <span class="step-num">1</span>
+          <div class="step-content">
+            <div class="step-cmd blue">sudo apt install vsftpd</div>
+            <div class="step-desc">FTP 서버 설치</div>
+          </div>
+        </div>
+        <div class="cmd-step">
+          <span class="step-num">2</span>
+          <div class="step-content">
+            <div class="step-cmd blue">sudo vi /etc/vsftpd.conf</div>
+            <div class="step-desc">설정 파일 편집</div>
+          </div>
+        </div>
+        <div class="cmd-step">
+          <span class="step-num">3</span>
+          <div class="step-content">
+            <div class="step-cmd blue">sudo systemctl restart vsftpd</div>
+            <div class="step-desc">설정 적용</div>
+          </div>
+        </div>
+        <div class="cmd-step">
+          <span class="step-num">4</span>
+          <div class="step-content">
+            <div class="step-cmd blue">sudo systemctl status vsftpd</div>
+            <div class="step-desc">실행 확인</div>
+          </div>
+        </div>
+        <div class="cmd-step">
+          <span class="step-num">5</span>
+          <div class="step-content">
+            <div class="step-cmd blue">sudo chmod 777 /var/www/html</div>
+            <div class="step-desc">업로드 권한 오류 시 실행</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">설정 파일 — /etc/vsftpd.conf</div>
+        <div class="config-block config-ftp">
+          <div><span class="config-key">listen</span>=<span class="config-val">YES</span></div>
+          <div><span class="config-key">listen_ipv6</span>=<span class="config-val">NO</span></div>
+          <div><span class="config-key">write_enable</span>=<span class="config-val">YES</span></div>
+        </div>
+        <table>
+          <tr><th>설정값</th><th>의미</th></tr>
+          <tr><td class="mono">listen=YES</td><td>FTP 서버 켜기 (IPv4)</td></tr>
+          <tr><td class="mono">listen_ipv6=NO</td><td>IPv6 끄기 — 충돌 방지</td></tr>
+          <tr><td class="mono">write_enable=YES</td><td>파일 업로드 허용</td></tr>
+        </table>
+        <div class="warn-box" style="margin-top:14px">
+          <span class="warn-icon">⚠</span>
+          listen=YES인데 listen_ipv6=NO 안 하면 vsftpd 실행 안 됨
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">FileZilla 파일 업로드 경로</div>
+      <table>
+        <tr><th>구분</th><th>경로</th><th>설명</th></tr>
+        <tr><td>원격 사이트 (리눅스)</td><td class="mono" style="color:var(--accent-ftp)">/var/www/html/</td><td>여기에 index.html 올리면 됨</td></tr>
+        <tr><td>기본 접속 경로</td><td class="mono">/home/aisw</td><td>처음 연결 시 홈 디렉토리로 이동됨 — 직접 변경 필요</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Apache -->
+  <div class="section" id="apache">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <span class="section-badge badge-apache">Apache</span>
+      <span class="section-title">Apache 서버 — 웹 서버</span>
+      <span class="section-desc">포트 <span class="port-badge">80</span> · 브라우저로 확인</span>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">명령어 순서</div>
+        <div class="cmd-step">
+          <span class="step-num">1</span>
+          <div class="step-content">
+            <div class="step-cmd orange">sudo apt install apache2</div>
+            <div class="step-desc">Apache 설치 — 설정 파일 수정 없이 바로 사용 가능</div>
+          </div>
+        </div>
+        <div class="cmd-step">
+          <span class="step-num">2</span>
+          <div class="step-content">
+            <div class="step-cmd orange">브라우저 → http://[IP주소]</div>
+            <div class="step-desc">Windows 크롬에서 접속 테스트</div>
+          </div>
+        </div>
+        <div class="cmd-step">
+          <span class="step-num">3</span>
+          <div class="step-content">
+            <div class="step-cmd orange">/var/www/html/index.html</div>
+            <div class="step-desc">웹페이지 파일 위치 — FileZilla로 여기에 업로드</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Apache 핵심 정리</div>
+        <table>
+          <tr><th>항목</th><th>값</th></tr>
+          <tr><td>웹 루트 경로</td><td class="mono" style="color:var(--accent-apache)">/var/www/html/</td></tr>
+          <tr><td>기본 페이지</td><td class="mono">index.html</td></tr>
+          <tr><td>접속 방법</td><td>브라우저 주소창에 IP 입력</td></tr>
+          <tr><td>설정 파일 수정</td><td>없음 — 설치하면 바로 실행됨</td></tr>
+        </table>
+        <div class="tip-box" style="margin-top:14px">
+          <span class="warn-icon">✓</span>
+          Apache는 4개 중 유일하게 설정 파일 수정 없이 설치만 하면 바로 동작
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MariaDB -->
+  <div class="section" id="db">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <span class="section-badge badge-db">DB</span>
+      <span class="section-title">MariaDB — 데이터베이스</span>
+      <span class="section-desc">포트 <span class="port-badge">3306</span> · HeidiSQL로 접속</span>
+    </div>
+
+    <div class="card">
+      <div class="card-title">명령어 순서</div>
+      <div class="cmd-step">
+        <span class="step-num">1</span>
+        <div class="step-content">
+          <div class="step-cmd purple">sudo apt install mariadb-server</div>
+          <div class="step-desc">MariaDB 설치</div>
+        </div>
+      </div>
+      <div class="cmd-step">
+        <span class="step-num">2</span>
+        <div class="step-content">
+          <div class="step-cmd purple">sudo mysql_secure_installation</div>
+          <div class="step-desc">보안 설정 (root 비밀번호, 외부접근 차단 등)</div>
+        </div>
+      </div>
+      <div class="cmd-step">
+        <span class="step-num">3</span>
+        <div class="step-content">
+          <div class="step-cmd purple">mariadb -u root -p</div>
+          <div class="step-desc">DB 접속 (-u: 사용자, -p: 비밀번호 입력)</div>
+        </div>
+      </div>
+      <div class="cmd-step">
+        <span class="step-num">4</span>
+        <div class="step-content">
+          <div class="step-cmd purple">DB 내부 명령어 실행 (아래 표 참고)</div>
+          <div class="step-desc">DB 생성, 사용자 생성, 권한 부여</div>
+        </div>
+      </div>
+      <div class="cmd-step">
+        <span class="step-num">5</span>
+        <div class="step-content">
+          <div class="step-cmd purple">sudo vi /etc/mysql/mariadb.conf.d/50-server.cnf</div>
+          <div class="step-desc">bind-address = 0.0.0.0 으로 수정 (외부 접속 허용)</div>
+        </div>
+      </div>
+      <div class="cmd-step">
+        <span class="step-num">6</span>
+        <div class="step-content">
+          <div class="step-cmd purple">sudo systemctl restart mariadb</div>
+          <div class="step-desc">설정 적용 — mysqld 아니고 mariadb임 주의</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">DB 내부 명령어</div>
+        <div class="config-block config-db">
+          <div><span class="config-val">create database</span> aiswtest<span class="config-comment">;</span></div>
+          <div><span class="config-val">create user</span> <span class="config-key">'aiswdb'@'%'</span></div>
+          <div>&nbsp;&nbsp;<span class="config-val">identified by</span> <span class="config-key">'@Polytech'</span><span class="config-comment">;</span></div>
+          <div><span class="config-val">grant all privileges on</span></div>
+          <div>&nbsp;&nbsp;aiswtest.<span class="config-key">*</span> <span class="config-val">to</span> <span class="config-key">'aiswdb'@'%'</span></div>
+          <div>&nbsp;&nbsp;<span class="config-val">with grant option</span><span class="config-comment">;</span></div>
+          <div><span class="config-val">flush privileges</span><span class="config-comment">;</span></div>
+          <div><span class="config-val">exit</span><span class="config-comment">;</span></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">명령어 뜻 정리</div>
+        <table>
+          <tr><th>명령어</th><th>뜻</th></tr>
+          <tr><td class="mono">create database</td><td>DB(창고) 만들기</td></tr>
+          <tr><td class="mono">'aiswdb'@'%'</td><td>어디서든(%) 접속 가능한 사용자</td></tr>
+          <tr><td class="mono">identified by</td><td>비밀번호 설정</td></tr>
+          <tr><td class="mono">grant all privileges</td><td>모든 권한 주기</td></tr>
+          <tr><td class="mono">flush privileges</td><td>권한 즉시 적용</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <div class="card-title">설정 파일</div>
+        <div class="config-block config-db">
+          <div><span class="config-comment"># /etc/mysql/mariadb.conf.d/50-server.cnf</span></div>
+          <div><span class="config-key">bind-address </span>= <span class="config-val">0.0.0.0</span></div>
+        </div>
+        <div style="font-size:12px; color:var(--text-dim)">0.0.0.0 = 모든 IP에서 DB 접속 허용</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">HeidiSQL 접속 정보</div>
+        <table>
+          <tr><th>항목</th><th>값</th></tr>
+          <tr><td>호스트</td><td class="mono">192.168.xxx.xxx (리눅스 IP)</td></tr>
+          <tr><td>사용자</td><td class="mono" style="color:var(--accent-db)">aiswdb</td></tr>
+          <tr><td>암호</td><td class="mono" style="color:var(--accent-db)">@Polytech</td></tr>
+          <tr><td>포트</td><td class="mono">3306</td></tr>
+          <tr><td>DB</td><td class="mono">aiswtest</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="warn-box">
+      <span class="warn-icon">⚠</span>
+      <span>재시작 명령어는 <code style="color:var(--accent-db); background:#1a1a1a; padding:1px 6px; border-radius:3px">sudo systemctl restart mariadb</code> — <strong>mysqld 아님</strong>. Ubuntu/Debian 계열은 mariadb가 정확한 서비스명.</span>
+    </div>
+  </div>
+
+  <!-- 전체 비교표 -->
+  <div class="section">
+    <div class="card">
+      <div class="card-title">4개 서버 한눈에 비교</div>
+      <table>
+        <tr>
+          <th>서버</th><th>패키지명</th><th>설정 파일</th><th>재시작 명령어</th><th>포트</th><th>Windows 접속 도구</th>
+        </tr>
+        <tr>
+          <td style="color:var(--accent-ssh)">SSH</td>
+          <td class="mono">openssh-server</td>
+          <td class="mono">/etc/ssh/sshd_config</td>
+          <td class="mono">systemctl restart ssh</td>
+          <td><span class="port-badge">22</span></td>
+          <td>PuTTY</td>
+        </tr>
+        <tr>
+          <td style="color:var(--accent-ftp)">FTP</td>
+          <td class="mono">vsftpd</td>
+          <td class="mono">/etc/vsftpd.conf</td>
+          <td class="mono">systemctl restart vsftpd</td>
+          <td><span class="port-badge">21</span></td>
+          <td>FileZilla</td>
+        </tr>
+        <tr>
+          <td style="color:var(--accent-apache)">Apache</td>
+          <td class="mono">apache2</td>
+          <td style="color:var(--text-muted)">수정 없음</td>
+          <td class="mono">systemctl restart apache2</td>
+          <td><span class="port-badge">80</span></td>
+          <td>크롬 브라우저</td>
+        </tr>
+        <tr>
+          <td style="color:var(--accent-db)">MariaDB</td>
+          <td class="mono">mariadb-server</td>
+          <td class="mono">50-server.cnf</td>
+          <td class="mono">systemctl restart mariadb</td>
+          <td><span class="port-badge">3306</span></td>
+          <td>HeidiSQL</td>
+        </tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- 예상 문제 -->
+  <div class="section quiz-section" id="quiz">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <span class="section-badge" style="background:rgba(234,179,8,0.12); color:var(--yellow)">QUIZ</span>
+      <span class="section-title">시험 예상 문제</span>
+      <span class="section-desc">클릭하면 정답 보임</span>
+    </div>
+
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggle(this)">
+        <span><span class="quiz-num">Q01</span>SSH 서버 설치 명령어는?</span>
+        <span class="quiz-arrow">▼</span>
+      </div>
+      <div class="quiz-a">
+        <div class="ans-label">ANSWER</div>
+        <code>sudo apt install openssh-server</code>
+      </div>
+    </div>
+
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggle(this)">
+        <span><span class="quiz-num">Q02</span>SSH 기본 포트 번호는?</span>
+        <span class="quiz-arrow">▼</span>
+      </div>
+      <div class="quiz-a">
+        <div class="ans-label">ANSWER</div>
+        <strong>22번</strong> — 설정 파일: <code>/etc/ssh/sshd_config</code>에서 Port 22 확인
+      </div>
+    </div>
+
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggle(this)">
+        <span><span class="quiz-num">Q03</span>FTP 설정 파일에서 반드시 추가해야 하는 3가지 설정값은?</span>
+        <span class="quiz-arrow">▼</span>
+      </div>
+      <div class="quiz-a">
+        <div class="ans-label">ANSWER</div>
+        <code>listen=YES</code> · <code>listen_ipv6=NO</code> · <code>write_enable=YES</code><br>
+        listen_ipv6=NO 빠지면 vsftpd 실행 충돌 발생
+      </div>
+    </div>
+
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggle(this)">
+        <span><span class="quiz-num">Q04</span>Apache 웹 서버의 기본 웹 루트 경로는?</span>
+        <span class="quiz-arrow">▼</span>
+      </div>
+      <div class="quiz-a">
+        <div class="ans-label">ANSWER</div>
+        <code>/var/www/html/</code> — 여기에 index.html 올리면 브라우저에서 바로 접속 가능
+      </div>
+    </div>
+
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggle(this)">
+        <span><span class="quiz-num">Q05</span>MariaDB에서 외부 접속을 허용하려면 어떤 설정을 해야 하나?</span>
+        <span class="quiz-arrow">▼</span>
+      </div>
+      <div class="quiz-a">
+        <div class="ans-label">ANSWER</div>
+        설정 파일 <code>/etc/mysql/mariadb.conf.d/50-server.cnf</code> 에서<br>
+        <code>bind-address = 0.0.0.0</code> 으로 변경 후 <code>sudo systemctl restart mariadb</code>
+      </div>
+    </div>
+
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggle(this)">
+        <span><span class="quiz-num">Q06</span>MariaDB 재시작 명령어는? (자주 틀리는 문제)</span>
+        <span class="quiz-arrow">▼</span>
+      </div>
+      <div class="quiz-a">
+        <div class="ans-label">ANSWER</div>
+        <code>sudo systemctl restart mariadb</code><br>
+        ❌ <code>restart mysqld</code> — Ubuntu에서는 mysqld 아님
+      </div>
+    </div>
+
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggle(this)">
+        <span><span class="quiz-num">Q07</span>DB 사용자에게 권한을 부여하고 즉시 적용하는 명령어 2개는?</span>
+        <span class="quiz-arrow">▼</span>
+      </div>
+      <div class="quiz-a">
+        <div class="ans-label">ANSWER</div>
+        <code>grant all privileges on aiswtest.* to 'aiswdb'@'%' with grant option;</code><br>
+        <code>flush privileges;</code> — flush 안 하면 재시작 전까지 권한 적용 안 됨
+      </div>
+    </div>
+
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggle(this)">
+        <span><span class="quiz-num">Q08</span>FileZilla로 접속했는데 파일 업로드가 안 될 때 원인과 해결책은?</span>
+        <span class="quiz-arrow">▼</span>
+      </div>
+      <div class="quiz-a">
+        <div class="ans-label">ANSWER</div>
+        원인: <code>/var/www/html/</code> 폴더가 root 소유라 일반 사용자는 쓰기 권한 없음<br>
+        해결: <code>sudo chmod 777 /var/www/html</code>
+      </div>
+    </div>
+
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggle(this)">
+        <span><span class="quiz-num">Q09</span>4개 서버의 포트 번호를 순서대로 말하면?</span>
+        <span class="quiz-arrow">▼</span>
+      </div>
+      <div class="quiz-a">
+        <div class="ans-label">ANSWER</div>
+        SSH <strong>22</strong> · FTP <strong>21</strong> · Apache(HTTP) <strong>80</strong> · MariaDB <strong>3306</strong>
+      </div>
+    </div>
+
+    <div class="quiz-card">
+      <div class="quiz-q" onclick="toggle(this)">
+        <span><span class="quiz-num">Q10</span>ListenAddress 0.0.0.0 의 의미는?</span>
+        <span class="quiz-arrow">▼</span>
+      </div>
+      <div class="quiz-a">
+        <div class="ans-label">ANSWER</div>
+        모든 네트워크 인터페이스(모든 IP)에서 들어오는 접속을 허용한다는 뜻.<br>
+        SSH, FTP, MariaDB 모두 같은 의미로 사용됨
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+function toggle(el) {
+  const ans = el.nextElementSibling;
+  const arrow = el.querySelector('.quiz-arrow');
+  ans.classList.toggle('show');
+  arrow.classList.toggle('open');
+}
+</script>
+</body>
+</html>
